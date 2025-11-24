@@ -1054,40 +1054,67 @@ function clearAllWeeks() {
 }
 
 function shareToWhatsApp() {
-  const role = getRole();
-  const total = document.getElementById('totalAmount').textContent;
-  const s = document.getElementById('standardLessons').textContent;
-  const f = document.getElementById('fullGroupLessons').textContent;
-  const c = document.getElementById('compensations').textContent;
-  const t = document.getElementById('trialLessons').textContent; // 🔹 добавлено
+    const role = getRole();
+    let total = 0;
+    let s = 0, f = 0, c = 0, t = 0;
 
-  let weekSummary = "";
-  weeks.forEach(week => {
-    let std = 0, full = 0;
-    week.days.forEach(day => {
-      const lessons = document.querySelectorAll(`#${day.id}Lessons .lesson-item`);
-      lessons.forEach(l => {
-        const [fullCheck] = l.querySelectorAll('input[type="checkbox"]');
-        fullCheck.checked ? full++ : std++;
-      });
+    // Считаем все данные напрямую из weeks
+    weeks.forEach(week => {
+        week.days.forEach(day => {
+            // Считаем уроки
+            const lessons = document.querySelectorAll(`#${day.id}Lessons .lesson-item`);
+            lessons.forEach(l => {
+                const [full] = l.querySelectorAll('input[type="checkbox"]');
+                if (full.checked) f++;
+                else s++;
+            });
+
+            // Считаем отработки
+            const comp = document.getElementById(day.id + 'Compensation')?.checked;
+            const compCount = parseInt(document.getElementById(day.id + 'CompCount')?.value || 1);
+            if (comp && role === 'teacher') c += compCount;
+
+            // Считаем пробные уроки
+            const trial = document.getElementById(day.id + 'Trial')?.checked;
+            const trialCount = parseInt(document.getElementById(day.id + 'TrialCount')?.value || 1);
+            if (trial) t += trialCount;
+        });
     });
-    if (std > 0 || full > 0) {
-      weekSummary += `▪️ Неделя ${week.number}: ${std} обычных, ${full} полных\n`;
-    }
-  });
 
-  const message =
-    `*Отчёт по занятиям (${role === 'teacher' ? 'Преподаватель' : 'Ассистент'})*\n\n` +
-    (weekSummary ? `📅 *Итог по неделям:*\n${weekSummary}\n` : "") +
-    `📊 *Общий итог:*\n` +
-    `Обычных занятий: ${s}\n` +
-    `Полных групп: ${f}\n` +
-    `Пробных уроков: ${t}\n` + // 🔹 новая строка
-    (role === 'teacher' ? `Отработок: ${c}\n` : "") +
-    `\n💰 *Всего:* ${total}`;
+    // Пересчитываем общую сумму из week-total
+    document.querySelectorAll('.week-total').forEach(el => {
+        const sum = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+        total += sum;
+    });
 
-  const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-  window.open(url, '_blank');
+    // Формируем детали по неделям
+    let weekSummary = "";
+    weeks.forEach(week => {
+        let std = 0, full = 0;
+        week.days.forEach(day => {
+            const lessons = document.querySelectorAll(`#${day.id}Lessons .lesson-item`);
+            lessons.forEach(l => {
+                const [fullCheck] = l.querySelectorAll('input[type="checkbox"]');
+                fullCheck.checked ? full++ : std++;
+            });
+        });
+        if (std > 0 || full > 0) {
+            weekSummary += `▪️ Неделя ${week.number}: ${std} обычных, ${full} полных\n`;
+        }
+    });
+
+    const message =
+        `*Отчёт по занятиям (${role === 'teacher' ? 'Преподаватель' : 'Ассистент'})*\n\n` +
+        (weekSummary ? `📅 *Итог по неделям:*\n${weekSummary}\n` : "") +
+        `📊 *Общий итог:*\n` +
+        `Обычных занятий: ${s}\n` +
+        `Полных групп: ${f}\n` +
+        `Пробных уроков: ${t}\n` +
+        (role === 'teacher' ? `Отработок: ${c}\n` : "") +
+        `\n💰 *Всего:* ${total.toLocaleString()} ₸`;
+
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
 }
 
 
@@ -1228,5 +1255,6 @@ function loadDataFromFile(event) {
 
 </body>
 </html>
+
 
 
